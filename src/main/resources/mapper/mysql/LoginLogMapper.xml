@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.drone.repository.LoginLogRepository">
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sys_login_log (user_id, ip, device, login_time, result, fail_reason)
+        VALUES (#{userId}, #{ip}, #{device}, NOW(), #{result}, #{failReason})
+    </insert>
+</mapper>

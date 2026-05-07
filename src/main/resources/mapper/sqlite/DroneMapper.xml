@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.drone.repository.DroneRepository">
+
+    <!-- 结果映射：将数据库字段映射到 Drone 实体类 -->
+    <resultMap id="DroneResultMap" type="com.example.drone.domain.entity.Drone">
+        <id property="id" column="id"/>
+        <result property="serialNumber" column="serial_number"/>
+        <result property="modelName" column="model_name"/>
+        <result property="manufacturer" column="manufacturer"/>
+        <result property="purchaseDate" column="purchase_date" typeHandler="com.example.drone.common.LocalDateTypeHandler"/>
+        <result property="status" column="status"/>
+        <result property="maxFlightTime" column="max_flight_time"/>
+        <result property="maxFlightDistance" column="max_flight_distance"/>
+        <result property="weight" column="weight"/>
+        <result property="remarks" column="remarks"/>
+        <result property="createdAt" column="created_at" typeHandler="com.example.drone.common.LocalDateTimeTypeHandler"/>
+        <result property="updatedAt" column="updated_at" typeHandler="com.example.drone.common.LocalDateTimeTypeHandler"/>
+    </resultMap>
+
+    <!-- 插入无人机记录 -->
+    <insert id="insert" parameterType="com.example.drone.domain.entity.Drone" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_drone (
+            serial_number,
+            model_name,
+            manufacturer,
+            purchase_date,
+            status,
+            max_flight_time,
+            max_flight_distance,
+            weight,
+            remarks,
+            created_at,
+            updated_at
+        ) VALUES (
+            #{serialNumber},
+            #{modelName},
+            #{manufacturer},
+            #{purchaseDate},
+            #{status},
+            #{maxFlightTime},
+            #{maxFlightDistance},
+            #{weight},
+            #{remarks},
+            datetime('now', 'localtime'),
+            datetime('now', 'localtime')
+        )
+    </insert>
+
+    <!-- 根据 ID 查询无人机 -->
+    <select id="selectById" parameterType="long" resultMap="DroneResultMap">
+        SELECT
+            id,
+            serial_number,
+            model_name,
+            manufacturer,
+            purchase_date,
+            status,
+            max_flight_time,
+            max_flight_distance,
+            weight,
+            remarks,
+            created_at,
+            updated_at
+        FROM t_drone
+        WHERE id = #{id}
+    </select>
+
+    <!-- 根据序列号查询无人机 -->
+    <select id="selectBySerialNumber" parameterType="string" resultMap="DroneResultMap">
+        SELECT
+            id,
+            serial_number,
+            model_name,
+            manufacturer,
+            purchase_date,
+            status,
+            max_flight_time,
+            max_flight_distance,
+            weight,
+            remarks,
+            created_at,
+            updated_at
+        FROM t_drone
+        WHERE serial_number = #{serialNumber}
+    </select>
+
+    <!-- 根据条件查询无人机列表（支持动态 SQL） -->
+    <select id="selectByConditions" parameterType="com.example.drone.domain.dto.DroneQueryConditions" resultMap="DroneResultMap">
+        SELECT
+            id,
+            serial_number,
+            model_name,
+            manufacturer,
+            purchase_date,
+            status,
+            max_flight_time,
+            max_flight_distance,
+            weight,
+            remarks,
+            created_at,
+            updated_at
+        FROM t_drone
+        <where>
+            <if test="modelName != null and modelName != ''">
+                AND model_name LIKE '%' || #{modelName} || '%'
+            </if>
+            <if test="manufacturer != null and manufacturer != ''">
+                AND manufacturer LIKE '%' || #{manufacturer} || '%'
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY id DESC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
+        <if test="offset != null">
+            OFFSET #{offset}
+        </if>
+    </select>
+
+    <!-- 统计符合条件的无人机数量 -->
+    <select id="countByConditions" parameterType="com.example.drone.domain.dto.DroneQueryConditions" resultType="int">
+        SELECT COUNT(*)
+        FROM t_drone
+        <where>
+            <if test="modelName != null and modelName != ''">
+                AND model_name LIKE '%' || #{modelName} || '%'
+            </if>
+            <if test="manufacturer != null and manufacturer != ''">
+                AND manufacturer LIKE '%' || #{manufacturer} || '%'
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
+    </select>
+
+    <!-- 根据 ID 更新无人机信息（动态更新非 null 字段） -->
+    <update id="updateById" parameterType="com.example.drone.domain.entity.Drone">
+        UPDATE t_drone
+        <set>
+            <if test="serialNumber != null">
+                serial_number = #{serialNumber},
+            </if>
+            <if test="modelName != null">
+                model_name = #{modelName},
+            </if>
+            <if test="manufacturer != null">
+                manufacturer = #{manufacturer},
+            </if>
+            <if test="purchaseDate != null">
+                purchase_date = #{purchaseDate},
+            </if>
+            <if test="status != null">
+                status = #{status},
+            </if>
+            <if test="maxFlightTime != null">
+                max_flight_time = #{maxFlightTime},
+            </if>
+            <if test="maxFlightDistance != null">
+                max_flight_distance = #{maxFlightDistance},
+            </if>
+            <if test="weight != null">
+                weight = #{weight},
+            </if>
+            <if test="remarks != null">
+                remarks = #{remarks},
+            </if>
+            updated_at = datetime('now', 'localtime')
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据 ID 删除无人机 -->
+    <delete id="deleteById" parameterType="long">
+        DELETE FROM t_drone
+        WHERE id = #{id}
+    </delete>
+
+</mapper>

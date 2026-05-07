@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>飞行日志 — 无人机管理系统</title>
+  <link rel="stylesheet" th:href="@{/css/common.css}">
+  <script>
+  ;(function(){var t=localStorage.getItem('accessToken');if(!t||t==='null'||t==='undefined'){localStorage.clear();location.href='/login';return;}try{if(JSON.parse(atob(t.split('.')[1])).exp*1000<Date.now()){localStorage.clear();location.href='/login';}}catch(e){localStorage.clear();location.href='/login';}})();
+  </script>
+  <style>.nav-tabs{display:flex;gap:6px;margin-bottom:20px;padding:6px;border-radius:50px;background:rgba(255,255,255,0.45);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 4px 30px rgba(0,0,0,0.06),inset 0 0 0 1px rgba(255,255,255,0.6)}.nav-tab{flex:1;text-align:center;padding:10px 16px;border-radius:50px;color:var(--text-regular);text-decoration:none;font-size:14px;font-weight:500;transition:all 0.35s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden}.nav-tab:hover{background:rgba(255,255,255,0.55);color:var(--color-primary);box-shadow:inset 0 0 0 1px rgba(64,158,255,0.15)}.nav-tab.active{background:rgba(255,255,255,0.85);color:var(--color-primary);font-weight:600;box-shadow:0 2px 12px rgba(64,158,255,0.15),inset 0 0 0 1.5px rgba(64,158,255,0.25)}</style>
+</head>
+<body>
+<div class="app-wrapper">
+  <div class="nav-tabs">
+    <a href="/dashboard" class="nav-tab">📊 仪表盘</a>
+    <a href="/drones" class="nav-tab">🚁 无人机管理</a>
+    <a href="/missions" class="nav-tab">📋 飞行任务</a>
+    <a href="/flight-logs" class="nav-tab active">📝 飞行日志</a>
+    <a href="/maintenance" class="nav-tab">🔧 维护管理</a>
+  </div>
+  <div class="app-header"><div class="app-header-left"><span class="header-icon">📝</span><h2>飞行日志</h2></div></div>
+
+  <div class="card"><div class="card-header"><span class="card-icon">+</span> 记录飞行</div>
+  <div class="card-body">
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label"><span class="required">无人机</span></label><select class="form-control" id="fDroneSelect"><option value="">请选择无人机</option></select></div>
+      <div class="form-group"><label class="form-label"><span class="required">飞行时长(分钟)</span></label><input type="number" class="form-control" id="fDuration" placeholder="分钟" required></div>
+      <div class="form-group"><label class="form-label">飞行距离(米)</label><input type="number" class="form-control" id="fDistance" placeholder="米"></div>
+      <div class="form-group"><label class="form-label">最大高度(米)</label><input type="number" class="form-control" id="fAltitude" placeholder="米"></div>
+      <div class="form-group"><label class="form-label">起飞地点</label><input type="text" class="form-control" id="fTakeoff" placeholder="起飞地点"></div>
+      <div class="form-group"><label class="form-label">降落地点</label><input type="text" class="form-control" id="fLanding" placeholder="降落地点"></div>
+      <div class="form-group"><label class="form-label">天气</label><input type="text" class="form-control" id="fWeather" placeholder="天气状况"></div>
+      <div class="form-group"><label class="form-label">风速(km/h)</label><input type="number" class="form-control" id="fWind" placeholder="风速"></div>
+      <div class="form-group"><label class="form-label">电池消耗(%)</label><input type="number" class="form-control" id="fBattery" placeholder="百分比"></div>
+      <div class="form-group"><label class="form-label">备注</label><input type="text" class="form-control" id="fRemarks" placeholder="备注"></div>
+      <div class="form-group"><label class="form-label"><span class="required">飞行日期</span></label><input type="date" class="form-control" id="fDate" required></div>
+    </div>
+    <div class="form-actions" style="margin-top:12px"><button class="btn btn-primary" id="submitBtn" onclick="createLog()">✓ 提交飞行日志</button></div>
+  </div></div>
+
+  <div class="card"><div class="card-header"><span class="card-icon">📋</span> 日志列表</div>
+  <div class="card-body no-padding"><table class="data-table" id="logTable"></table></div></div>
+</div>
+
+<script th:src="@{/js/common.js}"></script>
+<script>
+function loadDrones(){
+  Api.get('/api/v1/drones?pageSize=500').then(function(r){
+    var drones = r.data.list||[];
+    var sel = document.getElementById('fDroneSelect');
+    drones.forEach(function(d){
+      var opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = d.serialNumber + ' (' + d.modelName + ')';
+      sel.appendChild(opt);
+    });
+  }).catch(function(e){ Toast.error('加载无人机列表失败: '+e.message); });
+}
+function loadLogs(){
+  Api.get('/api/v1/flight-logs?pageSize=100').then(function(r){
+    var list=r.data.list||[];
+    var h='<thead><tr><th>#</th><th>无人机</th><th>日期</th><th>时长</th><th>距离</th><th>高度</th><th>天气</th><th>操作</th></tr></thead><tbody>';
+    if(list.length===0){h+='<tr><td colspan="8"><div class="empty-state"><div class="empty-title">暂无飞行日志</div></div></td></tr>';}
+    else{list.forEach(function(l,i){h+='<tr><td class="col-num">'+(i+1)+'</td><td>'+ (l.droneSerialNumber||l.droneId)+'</td><td>'+l.flightDate+'</td><td>'+l.flightDuration+'分钟</td><td>'+(l.flightDistance||'-')+'米</td><td>'+(l.maxAltitude||'-')+'米</td><td>'+(l.weatherCondition||'-')+'</td><td><button class="btn-link danger" onclick="deleteLog('+l.id+')">删除</button></td></tr>';});}
+    h+='</tbody>';document.getElementById('logTable').innerHTML=h;
+  }).catch(function(e){ Toast.error('加载日志列表失败: '+e.message); });
+}
+function createLog(){
+  var droneId = parseInt(document.getElementById('fDroneSelect').value);
+  var duration = parseInt(document.getElementById('fDuration').value);
+  var flightDate = document.getElementById('fDate').value;
+  if(!droneId||!duration||!flightDate){Toast.warning('请填写必填字段');return;}
+  var data={droneId:droneId,flightDuration:duration,flightDistance:parseInt(document.getElementById('fDistance').value||0),maxAltitude:parseInt(document.getElementById('fAltitude').value||0),takeoffLocation:document.getElementById('fTakeoff').value,landingLocation:document.getElementById('fLanding').value,weatherCondition:document.getElementById('fWeather').value,windSpeed:parseInt(document.getElementById('fWind').value||0),batteryConsumed:parseInt(document.getElementById('fBattery').value||0),remarks:document.getElementById('fRemarks').value,flightDate:flightDate};
+  var btn=document.getElementById('submitBtn');btn.classList.add('btn-loading');btn.disabled=true;
+  Api.post('/api/v1/flight-logs',data).then(function(){btn.classList.remove('btn-loading');btn.disabled=false;Toast.success('创建成功');loadLogs();}).catch(function(e){btn.classList.remove('btn-loading');btn.disabled=false;Toast.error(e.message);});
+}
+function deleteLog(id){Modal.confirm({title:'删除日志',message:'确定要删除此飞行日志吗？',type:'danger',onOk:function(){Api.del('/api/v1/flight-logs/'+id).then(function(){Toast.success('删除成功');loadLogs();}).catch(function(e){Toast.error(e.message);});}});}
+document.addEventListener('DOMContentLoaded',function(){loadDrones();loadLogs();});
+</script>
+</body>
+</html>

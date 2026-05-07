@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.drone.repository.FlightMissionRepository">
+
+    <resultMap id="MissionResultMap" type="com.example.drone.domain.entity.FlightMission">
+        <id property="id" column="id"/>
+        <result property="missionCode" column="mission_code"/>
+        <result property="droneId" column="drone_id"/>
+        <result property="missionType" column="mission_type"/>
+        <result property="status" column="status"/>
+        <result property="pilotName" column="pilot_name"/>
+        <result property="plannedStartTime" column="planned_start_time" typeHandler="com.example.drone.common.LocalDateTimeTypeHandler"/>
+        <result property="plannedEndTime" column="planned_end_time" typeHandler="com.example.drone.common.LocalDateTimeTypeHandler"/>
+        <result property="actualStartTime" column="actual_start_time" typeHandler="com.example.drone.common.LocalDateTimeTypeHandler"/>
+        <result property="actualEndTime" column="actual_end_time" typeHandler="com.example.drone.common.LocalDateTimeTypeHandler"/>
+        <result property="flightArea" column="flight_area"/>
+        <result property="remarks" column="remarks"/>
+        <result property="createdAt" column="created_at" typeHandler="com.example.drone.common.LocalDateTimeTypeHandler"/>
+        <result property="updatedAt" column="updated_at" typeHandler="com.example.drone.common.LocalDateTimeTypeHandler"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_flight_mission (mission_code,drone_id,mission_type,status,pilot_name,planned_start_time,planned_end_time,actual_start_time,actual_end_time,flight_area,remarks,created_at,updated_at)
+        VALUES (#{missionCode},#{droneId},#{missionType,javaType=com.example.drone.domain.enums.MissionType,typeHandler=org.apache.ibatis.type.EnumTypeHandler},#{status,javaType=com.example.drone.domain.enums.MissionStatus,typeHandler=org.apache.ibatis.type.EnumTypeHandler},#{pilotName},#{plannedStartTime,typeHandler=com.example.drone.common.LocalDateTimeTypeHandler},#{plannedEndTime,typeHandler=com.example.drone.common.LocalDateTimeTypeHandler},#{actualStartTime,typeHandler=com.example.drone.common.LocalDateTimeTypeHandler},#{actualEndTime,typeHandler=com.example.drone.common.LocalDateTimeTypeHandler},#{flightArea},#{remarks},datetime('now','localtime'),datetime('now','localtime'))
+    </insert>
+
+    <select id="selectById" resultMap="MissionResultMap">
+        SELECT * FROM t_flight_mission WHERE id=#{id}
+    </select>
+
+    <select id="selectByMissionCode" resultMap="MissionResultMap">
+        SELECT * FROM t_flight_mission WHERE mission_code=#{missionCode}
+    </select>
+
+    <select id="selectByCondition" resultMap="MissionResultMap">
+        SELECT m.*,d.serial_number as drone_serial_number
+        FROM t_flight_mission m LEFT JOIN t_drone d ON m.drone_id=d.id
+        <where>
+            <if test="missionType!=null">AND m.mission_type=#{missionType}</if>
+            <if test="status!=null">AND m.status=#{status}</if>
+            <if test="droneId!=null">AND m.drone_id=#{droneId}</if>
+            <if test="pilotName!=null and pilotName!=''">AND m.pilot_name=#{pilotName}</if>
+        </where>
+        ORDER BY m.id DESC
+    </select>
+
+    <select id="countByCondition" resultType="int">
+        SELECT COUNT(*) FROM t_flight_mission
+        <where>
+            <if test="missionType!=null">AND mission_type=#{missionType}</if>
+            <if test="status!=null">AND status=#{status}</if>
+            <if test="droneId!=null">AND drone_id=#{droneId}</if>
+            <if test="pilotName!=null and pilotName!=''">AND pilot_name=#{pilotName}</if>
+        </where>
+    </select>
+
+    <update id="updateById">
+        UPDATE t_flight_mission
+        <set>
+            <if test="status!=null">status=#{status,javaType=com.example.drone.domain.enums.MissionStatus,typeHandler=org.apache.ibatis.type.EnumTypeHandler},</if>
+            <if test="missionType!=null">mission_type=#{missionType,javaType=com.example.drone.domain.enums.MissionType,typeHandler=org.apache.ibatis.type.EnumTypeHandler},</if>
+            <if test="pilotName!=null">pilot_name=#{pilotName},</if>
+            <if test="plannedStartTime!=null">planned_start_time=#{plannedStartTime},</if>
+            <if test="plannedEndTime!=null">planned_end_time=#{plannedEndTime},</if>
+            <if test="actualStartTime!=null">actual_start_time=#{actualStartTime},</if>
+            <if test="actualEndTime!=null">actual_end_time=#{actualEndTime},</if>
+            <if test="flightArea!=null">flight_area=#{flightArea},</if>
+            <if test="remarks!=null">remarks=#{remarks},</if>
+            updated_at=datetime('now','localtime')
+        </set>
+        WHERE id=#{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM t_flight_mission WHERE id=#{id}
+    </delete>
+</mapper>

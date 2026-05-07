@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title th:text="'无人机详情 — '+${drone.serialNumber}">无人机详情</title>
+  <link rel="stylesheet" th:href="@{/css/common.css}">
+  <script>
+  ;(function(){var t=localStorage.getItem('accessToken');if(!t||t==='null'||t==='undefined'){localStorage.clear();location.href='/login';return;}try{if(JSON.parse(atob(t.split('.')[1])).exp*1000<Date.now()){localStorage.clear();location.href='/login';}}catch(e){localStorage.clear();location.href='/login';}})();
+  </script>
+  <style>
+    .status-big{display:inline-block;padding:6px 20px;border-radius:var(--radius-card);font-size:16px;font-weight:600}
+    .status-available{background:var(--color-success-light);color:var(--color-success);border:1px solid #c2e7b0}
+    .status-maintenance{background:var(--color-warning-light);color:var(--color-warning);border:1px solid #f5dab1}
+    .status-scrapped{background:var(--color-danger-light);color:var(--color-danger);border:1px solid #fbc4c4}
+  </style>
+</head>
+<body>
+<div class="app-wrapper">
+  <!-- Header -->
+  <div class="app-header">
+    <div class="app-header-left">
+      <span class="header-icon">&#8505;</span>
+      <h2>无人机详情</h2>
+      <span style="font-size:14px;color:var(--text-secondary);margin-left:12px" th:text="${drone.serialNumber}">DJI-001</span>
+    </div>
+    <div class="app-header-right">
+      <a th:href="@{/drones/{id}/edit(id=${drone.id})}" class="btn btn-warning">&#9998; 编辑</a>
+      <button type="button" class="btn btn-danger" th:attr="onclick='deleteDrone('+${drone.id}+',\''+${drone.serialNumber}+'\')'">&#128465; 删除</button>
+      <a href="/drones" class="btn btn-default">&larr; 返回列表</a>
+    </div>
+  </div>
+
+  <!-- 指标卡片行 -->
+  <div class="metrics-row">
+    <div class="metric-card">
+      <div class="metric-icon" th:if="${drone.status=='可用'}">&#9989;</div>
+      <div class="metric-icon" th:if="${drone.status=='维修中'}">&#9888;</div>
+      <div class="metric-icon" th:if="${drone.status=='已报废'}">&#10060;</div>
+      <div class="metric-value" style="font-size:18px">
+        <span th:if="${drone.status=='可用'}" class="status-big status-available">可用</span>
+        <span th:if="${drone.status=='维修中'}" class="status-big status-maintenance">维修中</span>
+        <span th:if="${drone.status=='已报废'}" class="status-big status-scrapped">已报废</span>
+      </div>
+      <div class="metric-label">当前状态</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-icon">&#9201;</div>
+      <div class="metric-value" th:text="${drone.maxFlightTime}">46<span class="metric-unit">分钟</span></div>
+      <div class="metric-label">最大飞行时间</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-icon">&#128207;</div>
+      <div class="metric-value" th:text="${#numbers.formatInteger(drone.maxFlightDistance,0,'COMMA')}">30,000<span class="metric-unit">米</span></div>
+      <div class="metric-label">最大飞行距离</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-icon">&#9878;</div>
+      <div class="metric-value" th:text="${#numbers.formatInteger(drone.weight,0,'COMMA')}">895<span class="metric-unit">克</span></div>
+      <div class="metric-label">重量</div>
+    </div>
+  </div>
+
+  <!-- 基本信息 + 技术参数 -->
+  <div class="detail-grid">
+    <div class="card detail-section">
+      <div class="card-header">
+        <span class="card-icon">&#127991;</span> 基本信息
+      </div>
+      <div class="card-body no-padding">
+        <table class="detail-table">
+          <tr><th>序列号</th><td><strong th:text="${drone.serialNumber}">DJI-001</strong></td></tr>
+          <tr><th>型号名称</th><td th:text="${drone.modelName}">Mavic 3</td></tr>
+          <tr><th>制造商</th><td th:text="${drone.manufacturer}">DJI</td></tr>
+          <tr><th>购买日期</th><td th:text="${drone.purchaseDate}">2024-01-15</td></tr>
+          <tr><th>状态</th><td><span th:if="${drone.status=='可用'}" class="tag tag-success">可用</span><span th:if="${drone.status=='维修中'}" class="tag tag-warning">维修中</span><span th:if="${drone.status=='已报废'}" class="tag tag-danger">已报废</span></td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="card detail-section">
+      <div class="card-header">
+        <span class="card-icon">&#9881;</span> 技术参数
+      </div>
+      <div class="card-body no-padding">
+        <table class="detail-table">
+          <tr><th>最大飞行时间</th><td><span class="detail-value-primary" th:text="${drone.maxFlightTime}">46</span> 分钟</td></tr>
+          <tr><th>最大飞行距离</th><td><span class="detail-value-primary" th:text="${#numbers.formatInteger(drone.maxFlightDistance,0,'COMMA')}">30,000</span> 米</td></tr>
+          <tr><th>重量</th><td><span class="detail-value-primary" th:text="${#numbers.formatInteger(drone.weight,0,'COMMA')}">895</span> 克</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 备注 -->
+  <div class="card detail-section">
+    <div class="card-header">
+      <span class="card-icon">&#128172;</span> 备注信息
+    </div>
+    <div class="card-body">
+      <div th:if="${drone.remarks!=null&&!drone.remarks.isEmpty()}" class="detail-remarks-box" th:text="${drone.remarks}">企业版，配备 4/3 CMOS 哈苏相机</div>
+      <div th:if="${drone.remarks==null||drone.remarks.isEmpty()}" class="detail-remarks-empty">暂无备注</div>
+    </div>
+  </div>
+
+  <!-- 时间信息 -->
+  <div class="card detail-section">
+    <div class="card-header">
+      <span class="card-icon">&#9200;</span> 时间信息
+    </div>
+    <div class="card-body">
+      <div class="detail-timeline">
+        <div class="detail-timeline-item">
+          <span style="color:var(--color-primary)">&#9654;</span>
+          <strong>创建时间：</strong>
+          <span th:text="${drone.createdAt}">2024-01-15T10:30:00</span>
+        </div>
+        <div class="detail-timeline-item">
+          <span style="color:var(--color-warning)">&#8634;</span>
+          <strong>更新时间：</strong>
+          <span th:text="${drone.updatedAt}">2024-01-15T10:30:00</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script th:src="@{/js/common.js}"></script>
+</body>
+</html>

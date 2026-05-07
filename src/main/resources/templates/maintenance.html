@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>维护管理 — 无人机管理系统</title>
+  <link rel="stylesheet" th:href="@{/css/common.css}">
+  <script>
+  ;(function(){var t=localStorage.getItem('accessToken');if(!t||t==='null'||t==='undefined'){localStorage.clear();location.href='/login';return;}try{if(JSON.parse(atob(t.split('.')[1])).exp*1000<Date.now()){localStorage.clear();location.href='/login';}}catch(e){localStorage.clear();location.href='/login';}})();
+  </script>
+  <style>.nav-tabs{display:flex;gap:6px;margin-bottom:20px;padding:6px;border-radius:50px;background:rgba(255,255,255,0.45);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 4px 30px rgba(0,0,0,0.06),inset 0 0 0 1px rgba(255,255,255,0.6)}.nav-tab{flex:1;text-align:center;padding:10px 16px;border-radius:50px;color:var(--text-regular);text-decoration:none;font-size:14px;font-weight:500;transition:all 0.35s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden}.nav-tab:hover{background:rgba(255,255,255,0.55);color:var(--color-primary);box-shadow:inset 0 0 0 1px rgba(64,158,255,0.15)}.nav-tab.active{background:rgba(255,255,255,0.85);color:var(--color-primary);font-weight:600;box-shadow:0 2px 12px rgba(64,158,255,0.15),inset 0 0 0 1.5px rgba(64,158,255,0.25)}</style>
+</head>
+<body>
+<div class="app-wrapper">
+  <div class="nav-tabs">
+    <a href="/dashboard" class="nav-tab">📊 仪表盘</a>
+    <a href="/drones" class="nav-tab">🚁 无人机管理</a>
+    <a href="/missions" class="nav-tab">📋 飞行任务</a>
+    <a href="/flight-logs" class="nav-tab">📝 飞行日志</a>
+    <a href="/maintenance" class="nav-tab active">🔧 维护管理</a>
+  </div>
+  <div class="app-header"><div class="app-header-left"><span class="header-icon">🔧</span><h2>维护管理</h2></div></div>
+
+  <div class="card"><div class="card-header"><span class="card-icon">+</span> 创建维护计划</div>
+  <div class="card-body">
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label"><span class="required">无人机</span></label><select class="form-control" id="mDroneSelect"><option value="">请选择无人机</option></select></div>
+      <div class="form-group"><label class="form-label"><span class="required">维护类型</span></label><select class="form-control" id="mType"><option value="">请选择</option><option value="ROUTINE">定期维护</option><option value="REPAIR">维修</option><option value="INSPECTION">检查</option><option value="PART_REPLACEMENT">更换部件</option></select></div>
+      <div class="form-group"><label class="form-label"><span class="required">计划日期</span></label><input type="date" class="form-control" id="mDate" required></div>
+      <div class="form-group"><label class="form-label">技术员</label><input type="text" class="form-control" id="mTech" placeholder="技术员姓名"></div>
+      <div class="form-group form-group-full"><label class="form-label">描述</label><input type="text" class="form-control" id="mDesc" placeholder="维护描述"></div>
+    </div>
+    <div class="form-actions" style="margin-top:12px"><button class="btn btn-primary" id="submitBtn" onclick="createMtn()">✓ 创建维护计划</button></div>
+  </div></div>
+
+  <div class="card"><div class="card-header"><span class="card-icon">⏳</span> 待处理维护</div>
+  <div class="card-body no-padding"><table class="data-table" id="pendingTable"></table></div></div>
+</div>
+
+<script th:src="@{/js/common.js}"></script>
+<script>
+function loadDrones(){
+  Api.get('/api/v1/drones?pageSize=500').then(function(r){
+    var drones = r.data.list||[];
+    var sel = document.getElementById('mDroneSelect');
+    drones.forEach(function(d){
+      var opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = d.serialNumber + ' (' + d.modelName + ')';
+      sel.appendChild(opt);
+    });
+  }).catch(function(e){ Toast.error('加载无人机列表失败: '+e.message); });
+}
+function loadPending(){
+  Api.get('/api/v1/maintenance/pending').then(function(r){
+    var list=r.data||[];
+    var h='<thead><tr><th>#</th><th>无人机</th><th>类型</th><th>计划日期</th><th>技术员</th><th>描述</th><th>操作</th></tr></thead><tbody>';
+    if(list.length===0){h+='<tr><td colspan="7"><div class="empty-state"><div class="empty-title">暂无待处理维护</div></div></td></tr>';}
+    else{list.forEach(function(m,i){h+='<tr><td class="col-num">'+(i+1)+'</td><td>'+(m.droneSerialNumber||m.droneId)+'</td><td>'+m.maintenanceType+'</td><td>'+m.scheduledDate+'</td><td>'+(m.technician||'-')+'</td><td>'+(m.description||'-')+'</td><td><button class="btn-link" onclick="completeMtn('+m.id+')">完成</button></td></tr>';});}
+    h+='</tbody>';document.getElementById('pendingTable').innerHTML=h;
+  }).catch(function(e){ Toast.error('加载维护列表失败: '+e.message); });
+}
+function createMtn(){
+  var droneId = parseInt(document.getElementById('mDroneSelect').value);
+  var mType = document.getElementById('mType').value;
+  var sDate = document.getElementById('mDate').value;
+  if(!droneId||!mType||!sDate){Toast.warning('请填写必填字段');return;}
+  var data={droneId:droneId,maintenanceType:mType,scheduledDate:sDate,technician:document.getElementById('mTech').value,description:document.getElementById('mDesc').value};
+  var btn=document.getElementById('submitBtn');btn.classList.add('btn-loading');btn.disabled=true;
+  Api.post('/api/v1/maintenance',data).then(function(){btn.classList.remove('btn-loading');btn.disabled=false;Toast.success('创建成功');loadPending();}).catch(function(e){btn.classList.remove('btn-loading');btn.disabled=false;Toast.error(e.message);});
+}
+function completeMtn(id){
+  var tech=prompt('完成维护 - 请输入技术员姓名：');
+  if(!tech)return;
+  var parts=prompt('更换部件（无则留空）：')||'';
+  var cost=parseInt(prompt('费用（元）：')||'0');
+  var desc=prompt('维护描述：')||'';
+  var data={status:'COMPLETED',technician:tech,partsReplaced:parts,cost:cost,description:desc,completedDate:new Date().toISOString().split('T')[0]};
+  Api.put('/api/v1/maintenance/'+id,data).then(function(){Toast.success('维护完成');loadPending();}).catch(function(e){Toast.error(e.message);});
+}
+document.addEventListener('DOMContentLoaded',function(){loadDrones();loadPending();});
+</script>
+</body>
+</html>

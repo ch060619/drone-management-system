@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title th:text="${isEdit}?'编辑无人机 — 无人机管理系统':'添加无人机 — 无人机管理系统'">无人机表单</title>
+  <link rel="stylesheet" th:href="@{/css/common.css}">
+  <script>
+  ;(function(){var t=localStorage.getItem('accessToken');if(!t||t==='null'||t==='undefined'){localStorage.clear();location.href='/login';return;}try{if(JSON.parse(atob(t.split('.')[1])).exp*1000<Date.now()){localStorage.clear();location.href='/login';}}catch(e){localStorage.clear();location.href='/login';}})();
+  </script>
+  <style>
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 40px}
+    .form-grid .form-group-full{grid-column:1/-1}
+    @media(max-width:768px){.form-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="app-wrapper">
+  <!-- Header -->
+  <div class="app-header">
+    <div class="app-header-left">
+      <span class="header-icon" th:text="${isEdit}?'&#9998;':'+'"></span>
+      <h2 th:text="${isEdit}?'编辑无人机':'添加无人机'">添加无人机</h2>
+    </div>
+    <div class="app-header-right">
+      <a href="/drones" class="btn btn-default">&larr; 返回列表</a>
+    </div>
+  </div>
+
+  <form id="droneForm" novalidate>
+    <!-- ===== 基本信息 ===== -->
+    <div class="card form-card">
+      <div class="card-header">
+        <span class="card-icon">&#127991;</span> 基本信息
+      </div>
+      <div class="card-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label"><span class="required">序列号</span></label>
+            <input type="text" class="form-control" id="serialNumber" name="serialNumber"
+                   th:value="${drone?.serialNumber}" placeholder="无人机制造商提供的唯一序列号" maxlength="100" autofocus>
+            <div class="form-help">制造商标注的唯一序列号标识</div>
+            <div class="form-error" id="serialNumberError"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label"><span class="required">型号名称</span></label>
+            <input type="text" class="form-control" id="modelName" name="modelName"
+                   th:value="${drone?.modelName}" placeholder="例如：DJI Mavic 3" maxlength="100">
+            <div class="form-error" id="modelNameError"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label"><span class="required">制造商</span></label>
+            <input type="text" class="form-control" id="manufacturer" name="manufacturer"
+                   th:value="${drone?.manufacturer}" placeholder="例如：DJI、Parrot" maxlength="100">
+            <div class="form-error" id="manufacturerError"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label"><span class="required">购买日期</span></label>
+            <input type="date" class="form-control" id="purchaseDate" name="purchaseDate"
+                   th:value="${drone?.purchaseDate}">
+            <div class="form-error" id="purchaseDateError"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label"><span class="required">状态</span></label>
+            <select class="form-control" id="status" name="status">
+              <option value="">请选择状态</option>
+              <option value="AVAILABLE" th:selected="${drone?.status=='可用'||drone?.status=='AVAILABLE'}">可用</option>
+              <option value="UNDER_MAINTENANCE" th:selected="${drone?.status=='维修中'||drone?.status=='UNDER_MAINTENANCE'}">维修中</option>
+              <option value="SCRAPPED" th:selected="${drone?.status=='已报废'||drone?.status=='SCRAPPED'}">已报废</option>
+            </select>
+            <div class="form-error" id="statusError"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 技术参数 ===== -->
+    <div class="card form-card">
+      <div class="card-header">
+        <span class="card-icon">&#9881;</span> 技术参数
+      </div>
+      <div class="card-body">
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label"><span class="required">最大飞行时间</span></label>
+            <div class="input-group">
+              <input type="number" class="form-control" id="maxFlightTime" name="maxFlightTime"
+                     th:value="${drone?.maxFlightTime}" placeholder="请输入" min="1" max="999">
+              <span class="input-addon">分钟</span>
+            </div>
+            <div class="form-help">单次充电后可飞行的最大时长</div>
+            <div class="form-error" id="maxFlightTimeError"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label"><span class="required">最大飞行距离</span></label>
+            <div class="input-group">
+              <input type="number" class="form-control" id="maxFlightDistance" name="maxFlightDistance"
+                     th:value="${drone?.maxFlightDistance}" placeholder="请输入" min="1" max="999999">
+              <span class="input-addon">米</span>
+            </div>
+            <div class="form-error" id="maxFlightDistanceError"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label"><span class="required">重量</span></label>
+            <div class="input-group">
+              <input type="number" class="form-control" id="weight" name="weight"
+                     th:value="${drone?.weight}" placeholder="请输入" min="1" max="999999">
+              <span class="input-addon">克</span>
+            </div>
+            <div class="form-error" id="weightError"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 备注 ===== -->
+    <div class="card form-card">
+      <div class="card-header">
+        <span class="card-icon">&#128172;</span> 备注信息
+      </div>
+      <div class="card-body">
+        <div class="form-group">
+          <label class="form-label">备注</label>
+          <textarea class="form-control" id="remarks" name="remarks" rows="4" maxlength="500"
+                    placeholder="请输入备注信息（可选）" th:text="${drone?.remarks}"></textarea>
+          <div class="char-counter" id="remarksCounter"><span id="remarksCount">0</span> / 500 字符</div>
+          <div class="form-error" id="remarksError"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 操作按钮 ===== -->
+    <div class="card">
+      <div class="card-body">
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+            <span class="btn-icon">&#10003;</span>
+            <span th:text="${isEdit}?'保存修改':'创建无人机'">创建无人机</span>
+          </button>
+          <a href="/drones" class="btn btn-default btn-lg" id="cancelBtn">
+            <span class="btn-icon">&#10005;</span> 取消
+          </a>
+          <button type="reset" class="btn btn-default btn-lg">
+            <span class="btn-icon">&#8634;</span> 重置
+          </button>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script th:src="@{/js/common.js}"></script>
+<script th:inline="javascript">
+(function() {
+  var isEdit = /*[[${isEdit}]]*/ false;
+  var droneId = /*[[${drone?.id}]]*/ null;
+  var $f = document.getElementById('droneForm');
+  var $btn = document.getElementById('submitBtn');
+
+  // ===== 字符计数 =====
+  var $rmk = document.getElementById('remarks');
+  var $rmkCnt = document.getElementById('remarksCount');
+  var $rmkCtr = document.getElementById('remarksCounter');
+  function updateCnt(){
+    var c = $rmk.value.length;
+    $rmkCnt.textContent = c;
+    $rmkCtr.classList.remove('warning','danger');
+    if(c>450&&c<=500) $rmkCtr.classList.add('warning');
+    else if(c>500) $rmkCtr.classList.add('danger');
+  }
+  $rmk.addEventListener('input',updateCnt);
+  updateCnt();
+
+  // ===== 脏检测 =====
+  var dirty = formDirty('#droneForm');
+  document.getElementById('cancelBtn').addEventListener('click',function(e){
+    if(dirty&&dirty.isDirty()){
+      if(!confirm('\u60A8\u6709\u672A\u4FDD\u5B58\u7684\u66F4\u6539\uFF0C\u786E\u5B9A\u8981\u79BB\u5F00\u5417\uFF1F')){
+        e.preventDefault();
+      }
+    }
+  });
+
+  // ===== 验证器 =====
+  var rules = {
+    serialNumber:function(v){v=v.trim();if(!v)return'\u5E8F\u5217\u53F7\u4E0D\u80FD\u4E3A\u7A7A';if(v.length>100)return'\u957F\u5EA6\u4E0D\u80FD\u8D85\u8FC7100\u4E2A\u5B57\u7B26';return null;},
+    modelName:function(v){v=v.trim();if(!v)return'\u578B\u53F7\u540D\u79F0\u4E0D\u80FD\u4E3A\u7A7A';if(v.length>100)return'\u957F\u5EA6\u4E0D\u80FD\u8D85\u8FC7100\u4E2A\u5B57\u7B26';return null;},
+    manufacturer:function(v){v=v.trim();if(!v)return'\u5236\u9020\u5546\u4E0D\u80FD\u4E3A\u7A7A';if(v.length>100)return'\u957F\u5EA6\u4E0D\u80FD\u8D85\u8FC7100\u4E2A\u5B57\u7B26';return null;},
+    purchaseDate:function(v){if(!v)return'\u8D2D\u4E70\u65E5\u671F\u4E0D\u80FD\u4E3A\u7A7A';return null;},
+    status:function(v){if(!v)return'\u8BF7\u9009\u62E9\u72B6\u6001';return null;},
+    maxFlightTime:function(v){if(!v)return'\u6700\u5927\u98DE\u884C\u65F6\u95F4\u4E0D\u80FD\u4E3A\u7A7A';var n=parseInt(v);if(isNaN(n)||n<1)return'\u5FC5\u987B\u5927\u4E8E0';if(n>999)return'\u4E0D\u80FD\u8D85\u8FC7999\u5206\u949F';return null;},
+    maxFlightDistance:function(v){if(!v)return'\u6700\u5927\u98DE\u884C\u8DDD\u79BB\u4E0D\u80FD\u4E3A\u7A7A';var n=parseInt(v);if(isNaN(n)||n<1)return'\u5FC5\u987B\u5927\u4E8E0';if(n>999999)return'\u4E0D\u80FD\u8D85\u8FC7999999\u7C73';return null;},
+    weight:function(v){if(!v)return'\u91CD\u91CF\u4E0D\u80FD\u4E3A\u7A7A';var n=parseInt(v);if(isNaN(n)||n<1)return'\u5FC5\u987B\u5927\u4E8E0';if(n>999999)return'\u4E0D\u80FD\u8D85\u8FC7999999\u514B';return null;}
+  };
+
+  function setState(id,err){
+    var el=document.getElementById(id);
+    var er=document.getElementById(id+'Error');
+    if(!el||!er)return;
+    if(err){el.classList.add('error');el.classList.remove('success');er.textContent=err;}
+    else{el.classList.remove('error');el.classList.add('success');er.textContent='';}
+  }
+  function clearAll(){Object.keys(rules).forEach(function(k){var el=document.getElementById(k);if(el){el.classList.remove('error','success');}var er=document.getElementById(k+'Error');if(er)er.textContent='';});}
+
+  // 失焦验证
+  Object.keys(rules).forEach(function(k){
+    var el=document.getElementById(k);
+    if(!el)return;
+    el.addEventListener('blur',function(){setState(k,rules[k](el.value));});
+    el.addEventListener('input',function(){var e=rules[k](el.value);if(!e)setState(k,null);else{var er=document.getElementById(k+'Error');if(er&&er.textContent)setState(k,e);}});
+  });
+
+  // ===== 提交 =====
+  $f.addEventListener('submit',function(e){
+    e.preventDefault();
+    clearAll();
+    var hasErr=false,data={};
+    Object.keys(rules).forEach(function(k){
+      var v=document.getElementById(k).value;
+      var err=rules[k](v);
+      if(err){setState(k,err);hasErr=true;}
+      else{setState(k,null);data[k]=(k==='remarks'?v:v.trim());}
+    });
+    ['maxFlightTime','maxFlightDistance','weight'].forEach(function(f){data[f]=parseInt(data[f]);});
+    if(hasErr){Toast.warning('\u8BF7\u4FEE\u6B63\u8868\u5355\u4E2D\u7684\u9519\u8BEF\u540E\u518D\u63D0\u4EA4');return;}
+    $btn.classList.add('btn-loading');
+    $btn.disabled=true;
+    var url=isEdit?'/api/v1/drones/'+droneId:'/api/v1/drones';
+    var m=isEdit?'PUT':'POST';
+    Api.request(m,url,data).then(function(){
+      $btn.classList.remove('btn-loading');
+      $btn.disabled=false;
+      if(dirty)dirty.reset();
+      Toast.success(isEdit?'\u4FEE\u6539\u6210\u529F\uFF01':'\u521B\u5EFA\u6210\u529F\uFF01');
+      setTimeout(function(){location.href='/drones';},800);
+    }).catch(function(err){
+      $btn.classList.remove('btn-loading');
+      $btn.disabled=false;
+      Toast.error('\u64CD\u4F5C\u5931\u8D25: '+err.message);
+    });
+  });
+
+  // 重置按钮
+  document.querySelector('button[type="reset"]').addEventListener('click',function(){
+    setTimeout(function(){clearAll();updateCnt();if(dirty)dirty.reset();},10);
+  });
+})();
+</script>
+</body>
+</html>

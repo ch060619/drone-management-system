@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    exclude.xml — SpotBugs 误报排除清单（harness-legacy 宽松门禁）
+    适用场景：历史项目 Retrofit_Mode，排除已知误报，减少噪音
+    对应 Profile：harness-legacy（excludeFilterFile=config/spotbugs/exclude.xml）
+
+    使用说明：
+      - 本文件仅用于排除已确认的误报（False Positive），不应用于屏蔽真实 Bug
+      - 每条排除规则必须附有注释，说明排除原因和对应的代码场景
+      - 新增排除规则时，请遵循以下格式：
+          <Match>
+              <!-- 排除原因：说明为什么这是误报 -->
+              <!-- 影响范围：说明哪些类/方法受影响 -->
+              <Bug pattern="BUG_PATTERN_CODE"/>
+              <Class name="com.example.YourClass"/>  <!-- 可选：限定到具体类 -->
+          </Match>
+
+    SpotBugs Bug Pattern 参考：
+      https://spotbugs.readthedocs.io/en/latest/bugDescriptions.html
+
+    常用 Bug Pattern 代码：
+      EI_EXPOSE_REP      — 返回可变对象的引用（可能暴露内部状态）
+      EI_EXPOSE_REP2     — 存储外部传入的可变对象引用（可能被外部修改）
+      MS_MUTABLE_ARRAY   — 公共静态数组字段（可被外部修改）
+      SE_BAD_FIELD       — 不可序列化的字段（Serializable 类中）
+      DM_DEFAULT_ENCODING — 使用平台默认字符集
+-->
+<FindBugsFilter
+    xmlns="https://github.com/spotbugs/filter/3.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="https://github.com/spotbugs/filter/3.0.0
+                        https://raw.githubusercontent.com/spotbugs/spotbugs/master/spotbugs/etc/findbugsfilter.xsd">
+
+    <!-- ================================================================
+         排除类别 1：Lombok 生成代码的误报
+         原因：Lombok 的 @Data、@Builder、@Value 等注解会在编译期生成
+               getter/setter/builder 方法，这些生成代码可能触发 SpotBugs
+               的 EI_EXPOSE_REP 和 EI_EXPOSE_REP2 警告，属于误报。
+         ================================================================ -->
+
+    <!--
+        @Data / @Value 生成的 getter 返回可变对象（如 List、Date）时触发
+        EI_EXPOSE_REP。Lombok 生成的代码无法手动修改，属于误报。
+    -->
+    <Match>
+        <!-- Lombok @Data/@Value 生成的 getter 方法返回可变对象引用 -->
+        <Bug pattern="EI_EXPOSE_REP"/>
+        <!-- 匹配所有 Lombok 生成的 getter 方法（方法名以 get 开头） -->
+        <Method name="~get.*"/>
+    </Match>
+
+    <Match>
+        <!-- Lombok @Data/@Builder 生成的 setter/builder 方法存储可变对象引用 -->
+        <Bug pattern="EI_EXPOSE_REP2"/>
+        <!-- 匹配所有 Lombok 生成的 setter 方法（方法名以 set 开头） -->
+        <Method name="~set.*"/>
+    </Match>
+
+    <Match>
+        <!-- Lombok @Builder 生成的 builder 方法存储可变对象引用 -->
+        <Bug pattern="EI_EXPOSE_REP2"/>
+        <!-- 匹配 Lombok Builder 内部类的方法 -->
+        <Class name="~.*\$.*Builder"/>
+    </Match>
+
+    <!-- ================================================================
+         排除类别 2：Spring 代理类的误报
+         原因：Spring AOP 和 @Transactional 等机制会在运行时生成代理类，
+               这些代理类可能触发 SpotBugs 的序列化相关警告，属于误报。
+         ================================================================ -->
+
+    <Match>
+        <!--
+            Spring @Configuration 类通常不需要实现 Serializable，
+            但 Spring CGLIB 代理可能触发序列化相关警告。
+        -->
+        <Bug pattern="SE_BAD_FIELD"/>
+        <!-- 匹配带有 Spring 注解的配置类（通常以 Config 结尾） -->
+        <Class name="~.*Config(uration)?"/>
+    </Match>
+
+    <Match>
+        <!--
+            Spring @Service/@Component 类中注入的字段（如 ApplicationContext）
+            不可序列化，但这些类本身通常也不需要序列化。
+        -->
+        <Bug pattern="SE_BAD_FIELD_STORE"/>
+        <Class name="~.*Service"/>
+    </Match>
+
+    <!-- ================================================================
+         排除类别 3：测试类的部分规则
+         原因：测试代码的设计目标与生产代码不同，某些在生产代码中属于
+               问题的模式在测试代码中是合理的（如直接暴露内部状态以便断言）。
+         ================================================================ -->
+
+    <Match>
+        <!--
+            测试类中的 getter 方法返回可变对象引用是合理的，
+            测试代码需要直接访问内部状态进行断言验证。
+        -->
+        <Bug pattern="EI_EXPOSE_REP"/>
+        <!-- 匹配所有测试类（类名以 Test 结尾或包含 Test） -->
+        <Class name="~.*Test(s)?"/>
+    </Match>
+
+    <Match>
+        <!--
+            测试类中存储外部传入的可变对象引用是合理的，
+            测试数据构建器（TestDataBuilder）需要直接存储引用。
+        -->
+        <Bug pattern="EI_EXPOSE_REP2"/>
+        <Class name="~.*Test(s)?"/>
+    </Match>
+
+    <Match>
+        <!--
+            测试支持类（TestDataBuilder、TestConfig 等）中的误报排除。
+        -->
+        <Bug pattern="EI_EXPOSE_REP"/>
+        <Class name="~.*TestData.*"/>
+    </Match>
+
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+        <Class name="~.*TestData.*"/>
+    </Match>
+
+    <!-- ================================================================
+         排除类别 4：其他已知误报（按需添加）
+
+         使用说明：
+           如需添加新的排除规则，请复制以下模板并填写：
+
+           <Match>
+               <!-- 排除原因：[说明为什么这是误报，而不是真实 Bug] -->
+               <!-- 影响范围：[说明哪些类/方法/包受影响] -->
+               <!-- 添加日期：[YYYY-MM-DD] -->
+               <!-- 添加人：[@username] -->
+               <Bug pattern="[BUG_PATTERN_CODE]"/>
+               <Class name="com.example.your.ClassName"/>
+           </Match>
+
+         注意事项：
+           1. 排除规则应尽量精确（指定到具体类或方法），避免全局排除
+           2. 每条规则必须有注释说明排除原因
+           3. 定期审查排除清单，移除不再需要的规则
+           4. 如果排除的是真实 Bug，应在注释中说明已接受该风险
+         ================================================================ -->
+
+    <!--
+        示例：排除特定类的特定 Bug Pattern
+        <Match>
+            排除原因：UserDto 使用 Date 类型是为了兼容旧版 API，
+                      已在文档中说明调用方不应修改返回的 Date 对象。
+            影响范围：UserDto.getCreatedAt() 方法
+            添加日期：2024-01-01
+            添加人：@dev-team
+            <Bug pattern="EI_EXPOSE_REP"/>
+            <Class name="com.example.domain.UserDto"/>
+            <Method name="getCreatedAt"/>
+        </Match>
+    -->
+
+</FindBugsFilter>

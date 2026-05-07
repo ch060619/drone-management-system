@@ -1,0 +1,50 @@
+# 开发环境配置 - 使用 SQLite 数据库
+
+database:
+  type: sqlite
+  sqlite:
+    path: ./data/drone.db
+
+spring:
+  datasource:
+    initialization-mode: never
+    continue-on-error: false
+    platform: sqlite
+  thymeleaf:
+    cache: false
+  mail:
+    host: smtp.qq.com
+    port: 587
+    username: "${MAIL_USERNAME:your_qq_email@qq.com}"
+    password: "${MAIL_PASSWORD:your_qq_smtp_authorization_code}"
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+        debug: false
+
+jwt:
+  secret: "${JWT_SECRET:your_jwt_secret_key_at_least_256_bits}"
+  access-token-expiration: 7200
+  refresh-token-expiration: 604800
+
+mybatis:
+  mapper-locations: classpath:mapper/sqlite/*.xml
+  type-aliases-package: com.example.drone.domain.entity
+  type-handlers-package: com.example.drone.common
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+
+logging:
+  file:
+    name: logs/drone-management-system-dev.log
+    max-size: 10MB
+    max-history: 30
+  level:
+    com.example.drone: DEBUG
+    org.apache.ibatis: DEBUG

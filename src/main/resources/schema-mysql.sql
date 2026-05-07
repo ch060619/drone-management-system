@@ -1,0 +1,67 @@
+CREATE TABLE IF NOT EXISTS t_drone (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    serial_number VARCHAR(100) NOT NULL UNIQUE,
+    model_name VARCHAR(200) NOT NULL,
+    manufacturer VARCHAR(200) NOT NULL,
+    purchase_date VARCHAR(50) NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    max_flight_time INT NOT NULL,
+    max_flight_distance INT NOT NULL,
+    weight INT NOT NULL,
+    remarks TEXT,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS t_flight_mission (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    mission_code VARCHAR(100) NOT NULL UNIQUE,
+    drone_id BIGINT NOT NULL,
+    mission_type VARCHAR(50) NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+    pilot_name VARCHAR(100),
+    planned_start_time VARCHAR(50),
+    planned_end_time VARCHAR(50),
+    actual_start_time VARCHAR(50),
+    actual_end_time VARCHAR(50),
+    flight_area VARCHAR(200),
+    remarks TEXT,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (drone_id) REFERENCES t_drone(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS t_flight_log (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    drone_id BIGINT NOT NULL,
+    mission_id BIGINT,
+    flight_duration INT NOT NULL,
+    flight_distance INT,
+    max_altitude INT,
+    takeoff_location VARCHAR(200),
+    landing_location VARCHAR(200),
+    weather_condition VARCHAR(100),
+    wind_speed INT,
+    battery_consumed INT,
+    remarks TEXT,
+    flight_date VARCHAR(50) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (drone_id) REFERENCES t_drone(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS t_maintenance (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    drone_id BIGINT NOT NULL,
+    maintenance_type VARCHAR(50) NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+    scheduled_date VARCHAR(50) NOT NULL,
+    completed_date VARCHAR(50),
+    technician VARCHAR(100),
+    parts_replaced TEXT,
+    cost INT DEFAULT 0,
+    description TEXT,
+    next_maintenance_date VARCHAR(50),
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (drone_id) REFERENCES t_drone(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

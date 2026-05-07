@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>仪表盘 — 无人机管理系统</title>
+  <link rel="stylesheet" th:href="@{/css/common.css}">
+  <script>
+  ;(function(){var t=localStorage.getItem('accessToken');if(!t||t==='null'||t==='undefined'){localStorage.clear();location.href='/login';return;}try{if(JSON.parse(atob(t.split('.')[1])).exp*1000<Date.now()){localStorage.clear();location.href='/login';}}catch(e){localStorage.clear();location.href='/login';}})();
+  </script>
+  <style>
+    .nav-tabs{display:flex;gap:6px;margin-bottom:20px;padding:6px;border-radius:50px;background:rgba(255,255,255,0.45);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 4px 30px rgba(0,0,0,0.06),inset 0 0 0 1px rgba(255,255,255,0.6)}
+    .nav-tab{flex:1;text-align:center;padding:10px 16px;border-radius:50px;color:var(--text-regular);text-decoration:none;font-size:14px;font-weight:500;transition:all 0.35s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden}
+    .nav-tab:hover{background:rgba(255,255,255,0.55);color:var(--color-primary);box-shadow:inset 0 0 0 1px rgba(64,158,255,0.15)}
+    .nav-tab.active{background:rgba(255,255,255,0.85);color:var(--color-primary);font-weight:600;box-shadow:0 2px 12px rgba(64,158,255,0.15),inset 0 0 0 1.5px rgba(64,158,255,0.25)}
+    .stat-card{display:flex;align-items:center;gap:16px;padding:20px}
+    .stat-icon{width:56px;height:56px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0}
+    .stat-icon.blue{background:#ecf5ff;color:#409eff}
+    .stat-icon.green{background:#e1f3d8;color:#67c23a}
+    .stat-icon.orange{background:#faecd8;color:#e6a23c}
+    .stat-icon.red{background:#fef0f0;color:#f56c6c}
+    .stat-info .stat-num{font-size:28px;font-weight:700;color:var(--text-primary);line-height:1.2}
+    .stat-info .stat-label{font-size:13px;color:var(--text-secondary);margin-top:2px}
+    .section-title{font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+    .quick-link{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--color-primary-lighter);color:var(--color-primary);border-radius:var(--radius-round);font-size:13px;text-decoration:none;transition:all var(--transition-fast)}
+    .quick-link:hover{background:var(--color-primary);color:#fff}
+    .actions-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media(max-width:768px){.actions-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="app-wrapper">
+  <!-- 导航栏 -->
+  <div class="nav-tabs">
+    <a href="/dashboard" class="nav-tab active">📊 仪表盘</a>
+    <a href="/drones" class="nav-tab">🚁 无人机管理</a>
+    <a href="/missions" class="nav-tab">📋 飞行任务</a>
+    <a href="/flight-logs" class="nav-tab">📝 飞行日志</a>
+    <a href="/maintenance" class="nav-tab">🔧 维护管理</a>
+  </div>
+
+  <!-- 统计卡片 -->
+  <div class="metrics-row" id="statsRow"></div>
+
+  <!-- 快捷操作 -->
+  <div class="card">
+    <div class="card-header"><span class="card-icon">🚀</span> 快捷操作</div>
+    <div class="card-body">
+      <div class="actions-grid">
+        <a href="/drones/new" class="quick-link">+ 添加无人机</a>
+        <a href="/missions" class="quick-link">📋 创建飞行任务</a>
+        <a href="/flight-logs" class="quick-link">📝 记录飞行日志</a>
+        <a href="/maintenance" class="quick-link">🔧 创建维护计划</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script th:src="@{/js/common.js}"></script>
+<script>
+(function(){
+  Api.get('/api/v1/dashboard/stats').then(function(resp){
+    var s = resp.data;
+    var tpl = [
+      {icon:'🚁',cls:'blue',num:s.totalDrones,label:'无人机总数'},
+      {icon:'✅',cls:'green',num:s.availableCount,label:'可用'},
+      {icon:'🔧',cls:'orange',num:s.maintenanceCount,label:'维修中'},
+      {icon:'❌',cls:'red',num:s.scrappedCount,label:'已报废'}
+    ];
+    var h = '';
+    tpl.forEach(function(c){
+      h += '<div class="metric-card"><div class="stat-card" style="justify-content:center"><div class="stat-icon '+c.cls+'">'+c.icon+'</div><div class="stat-info"><div class="stat-num">'+c.num+'</div><div class="stat-label">'+c.label+'</div></div></div></div>';
+    });
+    document.getElementById('statsRow').innerHTML = h;
+  }).catch(function(){});
+})();
+</script>
+</body>
+</html>

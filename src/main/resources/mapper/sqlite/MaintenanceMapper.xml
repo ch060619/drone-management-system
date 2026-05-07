@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.drone.repository.MaintenanceRepository">
+
+    <resultMap id="MtnResultMap" type="com.example.drone.domain.entity.MaintenanceRecord">
+        <id property="id" column="id"/>
+        <result property="droneId" column="drone_id"/>
+        <result property="maintenanceType" column="maintenance_type"/>
+        <result property="status" column="status"/>
+        <result property="scheduledDate" column="scheduled_date" typeHandler="com.example.drone.common.LocalDateTypeHandler"/>
+        <result property="completedDate" column="completed_date" typeHandler="com.example.drone.common.LocalDateTypeHandler"/>
+        <result property="technician" column="technician"/>
+        <result property="partsReplaced" column="parts_replaced"/>
+        <result property="cost" column="cost"/>
+        <result property="description" column="description"/>
+        <result property="nextMaintenanceDate" column="next_maintenance_date" typeHandler="com.example.drone.common.LocalDateTypeHandler"/>
+        <result property="createdAt" column="created_at" typeHandler="com.example.drone.common.LocalDateTimeTypeHandler"/>
+        <result property="updatedAt" column="updated_at" typeHandler="com.example.drone.common.LocalDateTimeTypeHandler"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_maintenance (drone_id,maintenance_type,status,scheduled_date,completed_date,technician,parts_replaced,cost,description,next_maintenance_date,created_at,updated_at)
+        VALUES (#{droneId},#{maintenanceType,javaType=com.example.drone.domain.enums.MaintenanceType,typeHandler=org.apache.ibatis.type.EnumTypeHandler},'PENDING',#{scheduledDate,jdbcType=VARCHAR},#{completedDate,jdbcType=VARCHAR},#{technician},#{partsReplaced},#{cost},#{description},#{nextMaintenanceDate,jdbcType=VARCHAR},datetime('now','localtime'),datetime('now','localtime'))
+    </insert>
+
+    <select id="selectById" resultMap="MtnResultMap">SELECT * FROM t_maintenance WHERE id=#{id}</select>
+
+    <select id="selectByCondition" resultMap="MtnResultMap">
+        SELECT m.*,d.serial_number as drone_serial_number
+        FROM t_maintenance m LEFT JOIN t_drone d ON m.drone_id=d.id
+        <where>
+            <if test="droneId!=null">AND m.drone_id=#{droneId}</if>
+            <if test="status!=null">AND m.status=#{status}</if>
+        </where>
+        ORDER BY m.id DESC
+    </select>
+
+    <select id="countByCondition" resultType="int">
+        SELECT COUNT(*) FROM t_maintenance
+        <where>
+            <if test="droneId!=null">AND drone_id=#{droneId}</if>
+            <if test="status!=null">AND status=#{status}</if>
+        </where>
+    </select>
+
+    <update id="updateById">
+        UPDATE t_maintenance
+        <set>
+            <if test="status!=null">status=#{status},</if>
+            <if test="completedDate!=null">completed_date=#{completedDate},</if>
+            <if test="technician!=null">technician=#{technician},</if>
+            <if test="partsReplaced!=null">parts_replaced=#{partsReplaced},</if>
+            <if test="cost!=null">cost=#{cost},</if>
+            <if test="description!=null">description=#{description},</if>
+            <if test="nextMaintenanceDate!=null">next_maintenance_date=#{nextMaintenanceDate},</if>
+            updated_at=datetime('now','localtime')
+        </set>
+        WHERE id=#{id}
+    </update>
+
+    <delete id="deleteById">DELETE FROM t_maintenance WHERE id=#{id}</delete>
+
+    <select id="countPending" resultType="int">SELECT COUNT(*) FROM t_maintenance WHERE status='PENDING'</select>
+
+    <select id="selectPending" resultMap="MtnResultMap">SELECT * FROM t_maintenance WHERE status='PENDING' ORDER BY scheduled_date ASC</select>
+</mapper>

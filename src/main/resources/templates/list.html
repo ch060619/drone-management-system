@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>无人机管理 — 无人机管理系统</title>
+  <link rel="stylesheet" th:href="@{/css/common.css}">
+  <script>
+  ;(function(){var t=localStorage.getItem('accessToken');if(!t||t==='null'||t==='undefined'){localStorage.clear();location.href='/login';return;}try{if(JSON.parse(atob(t.split('.')[1])).exp*1000<Date.now()){localStorage.clear();location.href='/login';}}catch(e){localStorage.clear();location.href='/login';}})();
+  </script>
+  <style>
+    .table-header-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+    .table-header-bar .table-title{font-size:14px;font-weight:600;color:var(--text-primary)}
+    .table-header-bar .table-count{font-size:12px;color:var(--text-secondary);margin-left:8px;font-weight:400}
+    .batch-bar{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--color-primary-lighter);border-radius:var(--radius-base);margin-bottom:12px;font-size:13px;color:var(--color-primary);display:none}
+    .batch-bar.show{display:flex}
+  </style>
+</head>
+<body>
+<div class="app-wrapper">
+  <div class="nav-tabs">
+    <a href="/dashboard" class="nav-tab">仪表盘</a>
+    <a href="/drones" class="nav-tab active">无人机管理</a>
+    <a href="/missions" class="nav-tab">飞行任务</a>
+    <a href="/flight-logs" class="nav-tab">飞行日志</a>
+    <a href="/maintenance" class="nav-tab">维护管理</a>
+  </div>
+  <!-- Header -->
+  <div class="app-header">
+    <div class="app-header-left">
+      <span class="header-icon">&#9992;</span>
+      <h2>无人机管理</h2>
+    </div>
+    <div class="app-header-right">
+      <a href="/drones/new" class="btn btn-primary"><span class="btn-icon">+</span> 添加无人机</a>
+    </div>
+  </div>
+
+  <!-- 搜索卡片 -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-icon">&#128269;</span> 查询条件
+    </div>
+    <div class="card-body">
+      <form method="get" action="/drones" class="search-bar" id="searchForm">
+        <div class="search-item">
+          <label>型号名称</label>
+          <input type="text" name="modelName" placeholder="支持模糊查询" th:value="${queryRequest?.modelName}">
+        </div>
+        <div class="search-item">
+          <label>制造商</label>
+          <input type="text" name="manufacturer" placeholder="支持模糊查询" th:value="${queryRequest?.manufacturer}">
+        </div>
+        <div class="search-item">
+          <label>状态</label>
+          <select name="status">
+            <option value="">全部</option>
+            <option value="AVAILABLE" th:selected="${queryRequest?.status=='AVAILABLE'}">可用</option>
+            <option value="UNDER_MAINTENANCE" th:selected="${queryRequest?.status=='UNDER_MAINTENANCE'}">维修中</option>
+            <option value="SCRAPPED" th:selected="${queryRequest?.status=='SCRAPPED'}">已报废</option>
+          </select>
+        </div>
+        <div class="search-actions">
+          <button type="submit" class="btn btn-primary"><span class="btn-icon">&#128269;</span> 查询</button>
+          <a href="/drones" class="btn btn-default">重置</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 表格卡片 -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-icon">&#9776;</span> 数据列表
+      <span class="card-extra">共 <span th:text="${drones.total}">0</span> 条记录</span>
+    </div>
+
+    <!-- 有数据：表格 -->
+    <th:block th:if="${!drones.list.isEmpty()}">
+      <div class="card-body no-padding">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="col-num">#</th>
+              <th>序列号</th>
+              <th>型号名称</th>
+              <th>制造商</th>
+              <th>购买日期</th>
+              <th>状态</th>
+              <th>飞行时间</th>
+              <th>飞行距离</th>
+              <th class="col-actions">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="drone,iterStat:${drones.list}"
+                th:with="seqNum=${(drones.pageNum-1)*drones.pageSize+iterStat.count}">
+              <td class="col-num" th:text="${seqNum}">1</td>
+              <td class="col-serial" th:text="${drone.serialNumber}">DJI-001</td>
+              <td th:text="${drone.modelName}">Mavic 3</td>
+              <td th:text="${drone.manufacturer}">DJI</td>
+              <td th:text="${drone.purchaseDate}">2024-01-15</td>
+              <td>
+                <span th:if="${drone.status=='可用'}" class="tag tag-success">可用</span>
+                <span th:if="${drone.status=='维修中'}" class="tag tag-warning">维修中</span>
+                <span th:if="${drone.status=='已报废'}" class="tag tag-danger">已报废</span>
+              </td>
+              <td th:text="${drone.maxFlightTime+' 分钟'}">46 分钟</td>
+              <td th:text="${#numbers.formatInteger(drone.maxFlightDistance,0,'COMMA')+' 米'}">30,000 米</td>
+              <td class="col-actions">
+                <a th:href="@{/drones/{id}(id=${drone.id})}" class="btn-link">查看</a>
+                <a th:href="@{/drones/{id}/edit(id=${drone.id})}" class="btn-link">编辑</a>
+                <button type="button" class="btn-link danger"
+                        th:attr="onclick='deleteDrone('+${drone.id}+',\''+${drone.serialNumber}+'\')'">删除</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </th:block>
+
+    <!-- 空状态 -->
+    <th:block th:if="${drones.list.isEmpty()}">
+      <div class="card-body">
+        <div class="empty-state">
+          <div class="empty-icon">&#128232;</div>
+          <div class="empty-title">暂无无人机数据</div>
+          <div class="empty-desc">点击"添加无人机"按钮开始录入第一台设备</div>
+          <a href="/drones/new" class="btn btn-primary"><span class="btn-icon">+</span> 添加第一架无人机</a>
+        </div>
+      </div>
+    </th:block>
+  </div>
+
+  <!-- 分页卡片 -->
+  <th:block th:if="${drones.total>0}">
+    <div class="card">
+      <div class="card-body">
+        <div class="pagination-bar">
+          <div class="pagination-info">
+            共 <strong th:text="${drones.total}">0</strong> 条 &nbsp;|&nbsp;
+            第 <strong th:text="${drones.pageNum}">1</strong>/<strong th:text="${drones.pages}">1</strong> 页
+          </div>
+          <div class="pagination-pages">
+            <th:block th:if="${drones.pageNum>1}">
+              <a class="page-item" th:href="@{/drones(modelName=${queryRequest?.modelName},manufacturer=${queryRequest?.manufacturer},status=${queryRequest?.status},pageNum=1,pageSize=${drones.pageSize})}">&laquo;</a>
+            </th:block>
+            <th:block th:if="${drones.pageNum<=1}">
+              <span class="page-item disabled">&laquo;</span>
+            </th:block>
+            <th:block th:with="st=${drones.pageNum-2<1?1:drones.pageNum-2},ed=${drones.pageNum+2>drones.pages?drones.pages:drones.pageNum+2}">
+              <a th:if="${st>1}" class="page-item" th:href="@{/drones(modelName=${queryRequest?.modelName},manufacturer=${queryRequest?.manufacturer},status=${queryRequest?.status},pageNum=1,pageSize=${drones.pageSize})}">1</a>
+              <span th:if="${st>2}" class="page-item ellipsis">...</span>
+              <th:block th:each="p:${#numbers.sequence(st,ed)}">
+                <span th:if="${p==drones.pageNum}" class="page-item active" th:text="${p}">1</span>
+                <a th:if="${p!=drones.pageNum}" class="page-item" th:href="@{/drones(modelName=${queryRequest?.modelName},manufacturer=${queryRequest?.manufacturer},status=${queryRequest?.status},pageNum=${p},pageSize=${drones.pageSize})}" th:text="${p}">1</a>
+              </th:block>
+              <span th:if="${ed<drones.pages-1}" class="page-item ellipsis">...</span>
+              <a th:if="${ed<drones.pages}" class="page-item" th:href="@{/drones(modelName=${queryRequest?.modelName},manufacturer=${queryRequest?.manufacturer},status=${queryRequest?.status},pageNum=${drones.pages},pageSize=${drones.pageSize})}" th:text="${drones.pages}">99</a>
+            </th:block>
+            <th:block th:if="${drones.pageNum<drones.pages}">
+              <a class="page-item" th:href="@{/drones(modelName=${queryRequest?.modelName},manufacturer=${queryRequest?.manufacturer},status=${queryRequest?.status},pageNum=${drones.pageNum+1},pageSize=${drones.pageSize})}">&raquo;</a>
+            </th:block>
+            <th:block th:if="${drones.pageNum>=drones.pages}">
+              <span class="page-item disabled">&raquo;</span>
+            </th:block>
+          </div>
+        </div>
+      </div>
+    </div>
+  </th:block>
+</div>
+
+<script th:src="@{/js/common.js}"></script>
+</body>
+</html>

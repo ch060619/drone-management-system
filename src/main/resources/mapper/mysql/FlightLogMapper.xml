@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.drone.repository.FlightLogRepository">
+
+    <resultMap id="LogResultMap" type="com.example.drone.domain.entity.FlightLog">
+        <id property="id" column="id"/>
+        <result property="droneId" column="drone_id"/>
+        <result property="missionId" column="mission_id"/>
+        <result property="flightDuration" column="flight_duration"/>
+        <result property="flightDistance" column="flight_distance"/>
+        <result property="maxAltitude" column="max_altitude"/>
+        <result property="takeoffLocation" column="takeoff_location"/>
+        <result property="landingLocation" column="landing_location"/>
+        <result property="weatherCondition" column="weather_condition"/>
+        <result property="windSpeed" column="wind_speed"/>
+        <result property="batteryConsumed" column="battery_consumed"/>
+        <result property="remarks" column="remarks"/>
+        <result property="flightDate" column="flight_date" typeHandler="com.example.drone.common.LocalDateTypeHandler"/>
+        <result property="createdAt" column="created_at" typeHandler="com.example.drone.common.LocalDateTimeTypeHandler"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_flight_log (drone_id,mission_id,flight_duration,flight_distance,max_altitude,takeoff_location,landing_location,weather_condition,wind_speed,battery_consumed,remarks,flight_date,created_at)
+        VALUES (#{droneId},#{missionId},#{flightDuration},#{flightDistance},#{maxAltitude},#{takeoffLocation},#{landingLocation},#{weatherCondition},#{windSpeed},#{batteryConsumed},#{remarks},#{flightDate,jdbcType=VARCHAR},NOW())
+    </insert>
+
+    <select id="selectById" resultMap="LogResultMap">SELECT * FROM t_flight_log WHERE id=#{id}</select>
+
+    <select id="selectByDroneId" resultMap="LogResultMap">
+        SELECT * FROM t_flight_log WHERE drone_id=#{droneId} ORDER BY flight_date DESC
+    </select>
+
+    <select id="countByDroneId" resultType="int">
+        SELECT COUNT(*) FROM t_flight_log WHERE drone_id=#{droneId}
+    </select>
+
+    <select id="selectAll" resultMap="LogResultMap">SELECT * FROM t_flight_log ORDER BY id DESC</select>
+
+    <delete id="deleteById">DELETE FROM t_flight_log WHERE id=#{id}</delete>
+</mapper>
