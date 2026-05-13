@@ -20,4 +20,9 @@
     <update id="updatePassword">UPDATE sys_user SET password_hash = #{passwordHash} WHERE id = #{id}</update>
     <update id="updateActivationToken">UPDATE sys_user SET activation_token = #{token} WHERE id = #{id}</update>
     <select id="selectByActivationToken" resultMap="userMap">SELECT * FROM sys_user WHERE activation_token = #{token}</select>
+    <insert id="insertUserRole">
+        INSERT INTO sys_user_role (user_id, role_id) VALUES (#{userId}, #{roleId})
+    </insert>
+    <delete id="deleteUserRoles">DELETE FROM sys_user_role WHERE user_id = #{userId}</delete>
+    <delete id="deleteById">DELETE FROM sys_user WHERE id = #{id}</delete>
 </mapper>
